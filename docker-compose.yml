@@ -1,0 +1,30 @@
+version: "3"
+services:
+  iot-redis:
+    image: redis:latest
+    container_name: iot-redis
+  iot-robot:
+    build: ./robot
+    container_name: iot-robot
+    volumes:
+      - ./robot/src:/usr/src/app
+    entrypoint: python robot.py
+    depends_on:
+      - iot-redis
+    links:
+      - "iot-redis:iot-datastack"
+  iot-server:
+    build: ./server
+    container_name: iot-server
+    volumes:
+      - ./server/src:/usr/src/app
+    entrypoint: python server.py
+    depends_on:
+      - iot-redis
+    links:
+      - "iot-redis:iot-datastack"
+  iot-client:
+    build: ./client
+    container_name: iot-client
+    depends_on:
+      - iot-server
