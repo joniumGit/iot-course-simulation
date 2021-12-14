@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from random import Random
 
-import redis
+from paho.mqtt import client as mqtt
 
 rand = Random(0)
 
@@ -30,23 +30,22 @@ class Item:
 def generate_item() -> Item:
     import time
     time.sleep(rand.random() + SMALLEST_SLEEP)
-    mod = rand.random()
+    mod = rand.random() * (1.4 - 0.8) + 0.8
     return Item(
         rand.choice(COLORS),
-        DEFAULT_LENGTH if mod < 0.8 else DEFAULT_LENGTH * mod,
+        DEFAULT_LENGTH * mod,
     )
 
 
-def send_item(item: Item, r: redis.Redis):
+def send_item(item: Item, c: mqtt.Client):
     import time
     time.sleep(rand.random())
-    r.rpush('iot-data', repr(item))
+    c.publish('iot-data', repr(item))
 
 
-sink = redis.Redis(host='iot-datastack')
-try:
-    while True:
-        o = generate_item()
-        send_item(o, sink)
-finally:
-    sink.close()
+sink = mqtt.Client("iot-robot")
+sink.connect('iot-mosquitto')
+sink.loop_start()
+while True:
+    o = generate_item()
+    send_item(o, sink)

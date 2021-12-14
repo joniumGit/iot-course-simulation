@@ -1,5 +1,10 @@
 version: "3"
 services:
+  iot-mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: iot-mosquitto
+    volumes:
+      - "./mosquitto.conf:/mosquitto/config/mosquitto.conf"
   iot-redis:
     image: redis:latest
     container_name: iot-redis
@@ -8,17 +13,15 @@ services:
     container_name: iot-robot
     volumes:
       - ./robot/src:/usr/src/app
-    entrypoint: python robot.py
+    entrypoint: python -u robot.py
     depends_on:
       - iot-redis
-    links:
-      - "iot-redis:iot-datastack"
   iot-server:
     build: ./server
     container_name: iot-server
     volumes:
       - ./server/src:/usr/src/app
-    entrypoint: python server.py
+    entrypoint: python -u server.py
     depends_on:
       - iot-redis
     links:
@@ -28,3 +31,9 @@ services:
     container_name: iot-client
     depends_on:
       - iot-server
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./client/src:/home/node/app/src
+    links:
+      - "iot-redis:iot-datastack"
